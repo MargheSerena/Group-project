@@ -10,7 +10,7 @@ def remove_na_titles(
 def text_in_lower_case(
             df, 
             text_column):
-        # Make  lower case to avoid false duplicates
-        return df[text_column].str.lower()
+        # Make  lower case and remove double spaces to avoid false duplicates
+        return df[text_column].str.lower().str.replace('  ', ' ')
 
             
