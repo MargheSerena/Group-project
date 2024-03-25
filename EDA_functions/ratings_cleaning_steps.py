@@ -17,13 +17,20 @@ def aggregate_df(
             df,
             group_by_columns,
             col_to_aggregate,
-            operation):
+            operation,
+            new_name_for_col_aggregated):
       if operation == 'average':
           return pd.DataFrame(
-                df.groupby(group_by_columns)[col_to_aggregate].mean()).reset_index()
+               df.groupby(group_by_columns)[col_to_aggregate].mean()
+                    ).reset_index().rename(
+                         columns = {col_to_aggregate: new_name_for_col_aggregated})
       if operation == 'median':
           return pd.DataFrame(
-                df.groupby(group_by_columns)[col_to_aggregate].median()).reset_index()
+               df.groupby(group_by_columns)[col_to_aggregate].median()
+                    ).reset_index().rename(
+                         columns = {col_to_aggregate: new_name_for_col_aggregated})
       if operation == 'count':
           return pd.DataFrame(
-                df.groupby(group_by_columns)[col_to_aggregate].count()).reset_index()
+               df.groupby(group_by_columns)[col_to_aggregate].count()
+                    ).reset_index().rename(
+                         columns = {col_to_aggregate: new_name_for_col_aggregated})
