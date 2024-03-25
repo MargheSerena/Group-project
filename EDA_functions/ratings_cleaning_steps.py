@@ -1,5 +1,8 @@
 import pandas as pd
 
+def blabla():
+     return 'bla!'
+
 def remove_na_titles(
         df, 
         title_column: str
