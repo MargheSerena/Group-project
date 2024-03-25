@@ -1,3 +1,5 @@
+import pandas as pd
+
 def remove_na_titles(
         df, 
         title_column: str
