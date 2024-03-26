@@ -18,3 +18,9 @@ def identify_language(text: str) -> str:
             return "unknown"
     else:
         return "error"
+
+def TEST_func():
+    print("this is a test")
+
+def other_test():
+    print("otehr")
