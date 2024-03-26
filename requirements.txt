@@ -1,2 +1,3 @@
 langdetect
 iso639-lang
+rake_nltk
