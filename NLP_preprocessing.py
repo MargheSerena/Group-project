@@ -1,3 +1,4 @@
+import pandas as pd
 from langdetect import detect, DetectorFactory
 from iso639 import Lang
 from rake_nltk import Rake
@@ -39,7 +40,7 @@ def calculate_ngrams_RAKE(text: str):
     n_grams = r_phrase.get_ranked_phrases() + words
     return " ".join(n_grams)
 
-def create_BOW_feature_for_english_descriptions(df, input_column: str):
+def create_BOW_feature_for_english_descriptions(df, input_column: str, output_column: str):
     """ generates "bag of words" aka a list of n-grams between 1 and 3 characters long for each row in the input column
         
         Uses the function "calculate_ngrams_RAKE"
@@ -50,8 +51,8 @@ def create_BOW_feature_for_english_descriptions(df, input_column: str):
         if row["description_language"] == "English":
             BOW = calculate_ngrams_RAKE(row[input_column])
         else:
-            BOW = ['no english description']
-        df.at[index,'english_BOW'] = BOW
+            BOW = ''
+        df.at[index,output_column] = BOW
 
 def add_BOW_PCA_to_df(df, BOW_column: str, n_components_val: int):
     """
