@@ -1,4 +1,5 @@
 import pandas as pd
+# print("pandas", dir(pd))
 from langdetect import detect, DetectorFactory
 from iso639 import Lang
 from rake_nltk import Rake
