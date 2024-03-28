@@ -36,3 +36,24 @@ def aggregate_df(
                df.groupby(group_by_columns, dropna=False)[col_to_aggregate].count()
                     ).reset_index().rename(
                          columns = {col_to_aggregate: new_name_for_col_aggregated})
+
+
+def weighted_rating(
+    titles_df,
+    n_of_reviews_column,
+    avg_rating_column,
+    m,
+    C,
+    quantile_for_min_votes
+    ):
+
+    # Calculate minimum number of votes (m)
+    q = quantile_for_min_votes
+    m = titles_df[n_of_reviews_column].quantile(q)
+
+    # Calculate mean vote across the whole dataset
+    C = titles_df[avg_rating_column].mean()
+
+    v = titles_df[n_of_reviews_column]
+    R = titles_df[avg_rating_column]
+    return (v*R/(v+m) + m*C/(v+m))
