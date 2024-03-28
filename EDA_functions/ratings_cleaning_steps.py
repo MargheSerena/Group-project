@@ -36,6 +36,16 @@ def aggregate_df(
                df.groupby(group_by_columns, dropna=False)[col_to_aggregate].count()
                     ).reset_index().rename(
                          columns = {col_to_aggregate: new_name_for_col_aggregated})
+      if operation == 'min':
+          return pd.DataFrame(
+               df.groupby(group_by_columns, dropna=False)[col_to_aggregate].min()
+                    ).reset_index().rename(
+                         columns = {col_to_aggregate: new_name_for_col_aggregated})
+      if operation == 'max':
+          return pd.DataFrame(
+               df.groupby(group_by_columns, dropna=False)[col_to_aggregate].max()
+                    ).reset_index().rename(
+                         columns = {col_to_aggregate: new_name_for_col_aggregated})
 
 
 def weighted_rating(
@@ -57,3 +67,6 @@ def weighted_rating(
     v = titles_df[n_of_reviews_column]
     R = titles_df[avg_rating_column]
     return (v*R/(v+m) + m*C/(v+m))
+
+def review_time_conversion(date):
+    return pd.to_datetime(date, unit='s')
