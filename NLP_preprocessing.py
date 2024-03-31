@@ -1,5 +1,5 @@
 import pandas as pd
-# print("pandas", dir(pd))
+print("pandas", dir(pd))
 from langdetect import detect, DetectorFactory
 from iso639 import Lang
 from rake_nltk import Rake
@@ -93,4 +93,4 @@ def add_BOW_PCA_to_df(df, BOW_column: str, n_components_val: int):
         location= df.shape[1]
         df.insert(location, f"PC{i+1}", PCA_components[:,i].tolist())
         
-    return df
+    return pca_model
