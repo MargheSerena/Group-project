@@ -52,8 +52,6 @@ def weighted_rating(
     titles_df,
     n_of_reviews_column,
     avg_rating_column,
-    m,
-    C,
     quantile_for_min_votes
     ):
 
