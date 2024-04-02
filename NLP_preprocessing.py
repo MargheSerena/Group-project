@@ -5,6 +5,7 @@ from iso639 import Lang
 from rake_nltk import Rake
 
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
 from scipy.sparse import csr_matrix
 from sklearn.decomposition import PCA
@@ -55,7 +56,7 @@ def create_BOW_feature_for_english_descriptions(df, input_column: str, output_co
             BOW = ''
         df.at[index,output_column] = BOW
 
-def add_BOW_PCA_to_df(df, BOW_column: str, n_components_val: int):
+def add_CV_PCA_to_df(df, BOW_column: str, n_components_val: int):
     """
     This function expects a dataframe that has a bag of words column, the name of the bad of words column, 
     and the number of principal components you want to calculate. The output is the original dataframe with the principal component values added as columns.
@@ -75,6 +76,48 @@ def add_BOW_PCA_to_df(df, BOW_column: str, n_components_val: int):
     # Determine the column names for our dense matrix and create a dataframe with the vocabulary as columns:
     temp_dict = {}
     for counter, i in enumerate(list(count.vocabulary_.items())):
+            temp_dict[i[1]] = i[0]
+    
+    column_names = []
+    for i in range(len(temp_dict)):
+        column_names.append(temp_dict[i])
+
+    # Convert the array back into a dataframe:
+    scaled_dataframe=pd.DataFrame(scaled_data, columns= column_names) 
+
+    # PCA analysis
+    pca_model = PCA(n_components=n_components_val)
+    PCA_components = pca_model.fit_transform(scaled_dataframe)
+
+    # Now append the principal components to the starting df as new features:
+    for i in range(PCA_components.shape[1]):
+        location= df.shape[1]
+        df.insert(location, f"PC{i+1}", PCA_components[:,i].tolist())
+        
+    return pca_model
+
+
+def add_TFIDF_PCA_to_df(df, BOW_column: str, n_components_val: int):
+    """
+    This function expects a dataframe that has a bag of words column, the name of the bad of words column, 
+    and the number of principal components you want to calculate. The output is the original dataframe with the principal 
+    component values added as columns.
+    """
+    
+    #instantiating and generating the count matrix
+    vectorizer = TfidfVectorizer()
+    X = vectorizer.fit_transform(df[BOW_column])
+
+    # convert the count matrix to a dense matrix
+    dense_X = X.toarray()
+
+    # Scale the data
+    scale = StandardScaler()
+    scaled_data = scale.fit_transform(dense_X)
+
+    # Determine the column names for our dense matrix and create a dataframe with the vocabulary as columns:
+    temp_dict = {}
+    for counter, i in enumerate(list(vectorizer.vocabulary_.items())):
             temp_dict[i[1]] = i[0]
     
     column_names = []
