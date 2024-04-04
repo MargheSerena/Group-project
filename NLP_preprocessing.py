@@ -1,5 +1,4 @@
 import pandas as pd
-print("pandas", dir(pd))
 from langdetect import detect, DetectorFactory
 from iso639 import Lang
 from rake_nltk import Rake
@@ -46,9 +45,12 @@ def calculate_ngrams_RAKE(text: str):
     return " ".join(words)
 
 def create_BOW_feature_for_english_descriptions(df, input_column: str, output_column: str):
-    """ generates "bag of words" aka a list of n-grams between 1 and 3 characters long for each row in the input column
+    """ generates "bag of words" aka a list of unigrams for 
+        each row in the input column
         
         Uses the function "calculate_ngrams_RAKE"
+
+        Also breaks tokens down into stems to reduce the size of the vocabulary
     """
     ps = PorterStemmer()        
     
@@ -59,14 +61,6 @@ def create_BOW_feature_for_english_descriptions(df, input_column: str, output_co
         else:
             BOW = ''
 
-        # # add steming:
-        # BOW_stems = []
-        # try:
-        #     for w in BOW:
-        #         BOW_stems.append(ps.stem(w))
-        # except:
-        #     pass
-        
         try:
             words = word_tokenize(BOW)
             stems = ""
@@ -77,10 +71,42 @@ def create_BOW_feature_for_english_descriptions(df, input_column: str, output_co
             
         df.at[index,output_column] = stems
 
+
+def create_BOW_feature_for_english_descriptions_NOSTEMS(df, input_column: str, output_column: str):
+    """ generates "bag of words" aka a list of unigrams for 
+        each row in the input column
+        
+        Uses the function "calculate_ngrams_RAKE"
+
+        Also breaks tokens down into stems to reduce the size of the vocabulary
+    """
+    ps = PorterStemmer()        
+    
+    df["english_BOW"] = ""
+    for index, row in df.iterrows():
+        if row["description_language"] == "English":
+            BOW = calculate_ngrams_RAKE(row[input_column])
+        else:
+            BOW = ''
+
+        # try:
+        #     words = word_tokenize(BOW)
+        #     stems = ""
+        #     for w in words:
+        #         stems += " " + ps.stem(w)
+        # except:
+        #     pass
+            
+        df.at[index,output_column] = BOW
+
 def add_CV_PCA_to_df(df, BOW_column: str, n_components_val: int):
     """
-    This function expects a dataframe that has a bag of words column, the name of the bad of words column, 
-    and the number of principal components you want to calculate. The output is the original dataframe with the principal component values added as columns.
+    This function expects a dataframe that has a bag of words column, the name of the bad of 
+    words column, and the number of principal components you want to calculate. The output is 
+    the original dataframe with the principal component values added as columns.
+
+    NOTE: This function seemed to be too computationally intensive for the book dataset we are 
+    using and a different dimentionality reduction technique (truncated SVD) was used instead.
     """
     
     #instantiating and generating the count matrix
@@ -120,8 +146,10 @@ def add_CV_PCA_to_df(df, BOW_column: str, n_components_val: int):
 
 def add_TFIDF_iPCA_to_df(df, BOW_column: str, n_components_val: int):
     """
-    This function expects a dataframe that has a bag of words column, the name of the bad of words column, 
-    and the number of principal components you want to calculate. The output is the original dataframe with the principal 
+    This function expects a dataframe that has a bag of words column, the name of the bad of 
+    words column, 
+    and the number of principal components you want to calculate. The output is the original 
+    dataframe with the principal 
     component values added as columns.
     """
     
@@ -136,7 +164,8 @@ def add_TFIDF_iPCA_to_df(df, BOW_column: str, n_components_val: int):
     scale = StandardScaler()
     scaled_data = scale.fit_transform(dense_X)
 
-    # Determine the column names for our dense matrix and create a dataframe with the vocabulary as columns:
+    # Determine the column names for our dense matrix and create a dataframe with the 
+    # vocabulary as columns:
     temp_dict = {}
     for counter, i in enumerate(list(vectorizer.vocabulary_.items())):
             temp_dict[i[1]] = i[0]
@@ -161,8 +190,10 @@ def add_TFIDF_iPCA_to_df(df, BOW_column: str, n_components_val: int):
 
 def add_TFIDF_tSVD_to_df(df, BOW_column: str, n_components_val: int):
     """
-    This function expects a dataframe that has a bag of words column, the name of the bad of words column, 
-    and the number of principal components you want to calculate. The output is the original dataframe with the principal 
+    This function expects a dataframe that has a bag of words column, the name of the bad of 
+    words column, 
+    and the number of principal components you want to calculate. The output is the original 
+    dataframe with the principal 
     component values added as columns.
     """
     
@@ -177,7 +208,8 @@ def add_TFIDF_tSVD_to_df(df, BOW_column: str, n_components_val: int):
     scale = StandardScaler()
     scaled_data = scale.fit_transform(dense_X)
 
-    # Determine the column names for our dense matrix and create a dataframe with the vocabulary as columns:
+    # Determine the column names for our dense matrix and create a dataframe with the 
+    # vocabulary as columns:
     temp_dict = {}
     for counter, i in enumerate(list(vectorizer.vocabulary_.items())):
             temp_dict[i[1]] = i[0]
