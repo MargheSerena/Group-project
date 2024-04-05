@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from langdetect import detect, DetectorFactory
 from iso639 import Lang
 from rake_nltk import Rake
@@ -44,7 +45,7 @@ def calculate_ngrams_RAKE(text: str):
     # return " ".join(n_grams)
     return " ".join(words)
 
-def create_BOW_feature_for_english_descriptions(df, input_column: str, output_column: str):
+def create_BOW_feature_for_english_descriptions_STEMS(df, input_column: str, output_column: str):
     """ generates "bag of words" aka a list of unigrams for 
         each row in the input column
         
@@ -72,7 +73,7 @@ def create_BOW_feature_for_english_descriptions(df, input_column: str, output_co
         df.at[index,output_column] = stems
 
 
-def create_BOW_feature_for_english_descriptions_NOSTEMS(df, input_column: str, output_column: str):
+def create_BOW_feature_for_english_descriptions(df, input_column: str, output_column: str):
     """ generates "bag of words" aka a list of unigrams for 
         each row in the input column
         
@@ -88,61 +89,8 @@ def create_BOW_feature_for_english_descriptions_NOSTEMS(df, input_column: str, o
             BOW = calculate_ngrams_RAKE(row[input_column])
         else:
             BOW = ''
-
-        # try:
-        #     words = word_tokenize(BOW)
-        #     stems = ""
-        #     for w in words:
-        #         stems += " " + ps.stem(w)
-        # except:
-        #     pass
             
         df.at[index,output_column] = BOW
-
-def add_CV_PCA_to_df(df, BOW_column: str, n_components_val: int):
-    """
-    This function expects a dataframe that has a bag of words column, the name of the bad of 
-    words column, and the number of principal components you want to calculate. The output is 
-    the original dataframe with the principal component values added as columns.
-
-    NOTE: This function seemed to be too computationally intensive for the book dataset we are 
-    using and a different dimentionality reduction technique (truncated SVD) was used instead.
-    """
-    
-    #instantiating and generating the count matrix
-    count = CountVectorizer()
-    count_matrix = count.fit_transform(df[BOW_column])
-
-    # convert the count matrix to a dense matrix
-    dense_count_matrix = count_matrix.toarray()
-
-    # Scale the data
-    scale = StandardScaler()
-    scaled_data = scale.fit_transform(dense_count_matrix)
-
-    # Determine the column names for our dense matrix and create a dataframe with the vocabulary as columns:
-    temp_dict = {}
-    for counter, i in enumerate(list(count.vocabulary_.items())):
-            temp_dict[i[1]] = i[0]
-    
-    column_names = []
-    for i in range(len(temp_dict)):
-        column_names.append(temp_dict[i])
-
-    # Convert the array back into a dataframe:
-    scaled_dataframe=pd.DataFrame(scaled_data, columns= column_names) 
-
-    # PCA analysis
-    pca_model = PCA(n_components=n_components_val)
-    PCA_components = pca_model.fit_transform(scaled_dataframe)
-
-    # Now append the principal components to the starting df as new features:
-    for i in range(PCA_components.shape[1]):
-        location= df.shape[1]
-        df.insert(location, f"PC{i+1}", PCA_components[:,i].tolist())
-        
-    return pca_model
-
 
 def add_TFIDF_iPCA_to_df(df, BOW_column: str, n_components_val: int):
     """
@@ -188,25 +136,29 @@ def add_TFIDF_iPCA_to_df(df, BOW_column: str, n_components_val: int):
         
     return ipca_model
 
-def add_TFIDF_tSVD_to_df(df, BOW_column: str, n_components_val: int):
+def add_TFIDF_tSVD_to_df(df, BOW_column: str, n_components_val: int, train_index, test_index):
     """
-    This function expects a dataframe that has a bag of words column, the name of the bad of 
-    words column, 
-    and the number of principal components you want to calculate. The output is the original 
-    dataframe with the principal 
-    component values added as columns.
+    This function expects a dataframe that has a bag of words column, the name of the bag 
+    of words column, and the number of tSVD components you want to calculate. The 
+    output includes the following variables: tSVD_model, tSVD_components_X_train, tSVD_components_X_test, X_train_df, X_test_df
+
+    The train and test dataframes are returned will have the tSVD features added.
     """
+    # Split the incoming dataframe into train and test slices base on the list of train and test indices provided:
+    X_train_df = df[df["index"].isin(train_index)]
+    X_test_df = df[df["index"].isin(test_index)]
     
-    #instantiating and generating the count matrix
+    #instantiating and generating the tfidf
     vectorizer = TfidfVectorizer()
-    X = vectorizer.fit_transform(df[BOW_column])
+    X_train_tfidf = vectorizer.fit_transform(X_train_df[BOW_column])
+    X_test_tfidf = vectorizer.transform(X_test_df[BOW_column])
 
     # convert the tfidf matrix to a dense matrix
-    dense_X = X.toarray()
+    dense_X_train_tfidf = X_train_tfidf.toarray()
+    dense_X_test_tfidf = X_test_tfidf.toarray()
 
-    # Scale the data
-    scale = StandardScaler()
-    scaled_data = scale.fit_transform(dense_X)
+    # # combine the arrays:
+    # dense_X = np.concatenate((dense_X_train_tfidf, dense_X_test_tfidf), axis = 0)
 
     # Determine the column names for our dense matrix and create a dataframe with the 
     # vocabulary as columns:
@@ -219,15 +171,23 @@ def add_TFIDF_tSVD_to_df(df, BOW_column: str, n_components_val: int):
         column_names.append(temp_dict[i])
 
     # Convert the array back into a dataframe:
-    scaled_dataframe=pd.DataFrame(scaled_data, columns= column_names) 
+    scaled_dataframe_X_train=pd.DataFrame(dense_X_train_tfidf, columns= column_names)
+    scaled_dataframe_X_test=pd.DataFrame(dense_X_test_tfidf, columns= column_names) 
 
+    
     # tSVD analysis
     tSVD_model = TruncatedSVD(n_components=n_components_val)
-    tSVD_components = tSVD_model.fit_transform(scaled_dataframe)
+    tSVD_components_X_train = tSVD_model.fit_transform(scaled_dataframe_X_train)
+    tSVD_components_X_test = tSVD_model.transform(scaled_dataframe_X_test)
 
-    # # Now append the tSVD components to the starting df as new features:
-    for i in range(tSVD_components.shape[1]):
-        location= df.shape[1]
-        df.insert(location, f"tSVD{i+1}", tSVD_components[:,i].tolist())
+    # # Now append the tSVD components to the train and test dataframes as new features:
+    for i in range(tSVD_components_X_train.shape[1]):
+        location= X_train_df.shape[1]
+        X_train_df.insert(location, f"tSVD{i+1}", tSVD_components_X_train[:,i].tolist())
+
+    for i in range(tSVD_components_X_test.shape[1]):
+        location= X_test_df.shape[1]
+        X_test_df.insert(location, f"tSVD{i+1}", tSVD_components_X_test[:,i].tolist())
+    
         
-    return tSVD_model, tSVD_components
+    return tSVD_model, tSVD_components_X_train, tSVD_components_X_test, X_train_df, X_test_df
