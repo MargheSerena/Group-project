@@ -28,7 +28,32 @@ def identify_language(text: str) -> str:
     else:
         return "error"
 
-def calculate_ngrams_RAKE(text: str):
+def concat_nouns(text):
+    """
+    concatenate and apply lowercase lettering to proper nouns like names, publishers, and book titles
+    """
+
+    # Step 1: remove leading or ending brackets (if applicable) and internal quote marks
+    text = text.strip("[]")
+    text = text.replace("'", "")
+
+    # Step 2: If there are multiple nouns, split at the comma
+    text = text.split(", ")
+
+    # Step 3: Concatenate each noun and put all letters in lowercase:
+    text = [x.replace(" ", "").lower() for x in text]
+
+    # Step 4: Convert the list of tokens to a string
+    text = ' '.join(text)
+
+    return text
+
+def add_tokens_to_description(df):
+    df["description"] += " " + df["authors"].apply(concat_nouns)
+    df["description"] += " " + df["publisher"].apply(concat_nouns)
+    df["description"] += " " + df["Title"].str.lower()
+
+def calculate_ngrams_RAKE_original(text: str):
     """ generates a list of n-grams for a given input text using RAKE
     """
 
@@ -43,6 +68,18 @@ def calculate_ngrams_RAKE(text: str):
     
     # n_grams = r_phrase.get_ranked_phrases() + words
     # return " ".join(n_grams)
+    return " ".join(words)
+
+def calculate_ngrams_RAKE(text: str):
+    """ generates a list of n-grams for a given input text using RAKE
+    """
+
+    r_unigram = Rake()
+    r_unigram.extract_keywords_from_text(text)
+    
+    keyword_dict_scores = r_unigram.get_word_degrees()
+    words = list(keyword_dict_scores.keys())
+    
     return " ".join(words)
 
 def create_BOW_feature_for_english_descriptions_STEMS(df, input_column: str, output_column: str):
@@ -91,6 +128,14 @@ def create_BOW_feature_for_english_descriptions(df, input_column: str, output_co
             BOW = ''
             
         df.at[index,output_column] = BOW
+
+def create_tokens(df, input_column: str, output_column: str):
+    """ generates tokens aka a list of unigrams for 
+        each row in the input column. Uses the function "calculate_ngrams_RAKE"
+    """     
+    df[output_column] = df["description"].apply(calculate_ngrams_RAKE)
+
+
 
 def add_TFIDF_iPCA_to_df(df, BOW_column: str, n_components_val: int):
     """
