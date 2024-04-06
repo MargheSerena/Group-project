@@ -5,9 +5,12 @@ import numpy as np
 def main():
     # Define the dataframe and the train/ test indices
     df = pd.read_csv("English_fiction_pre_PCA_3.csv")
-    train_index = df["index"].iloc[:20000].tolist()
-    test_index = df["index"].iloc[20000:].tolist()
-    n_tSVD_components = 300
+    train_df = pd.read_csv("original_data/train_indices.csv")
+    test_df = pd.read_csv("original_data/test_indices.csv")
+    
+    train_index = train_df["index"].tolist()
+    test_index = test_df["index"].tolist()
+    n_tSVD_components = 3000
     
     # Add tokens from other columns to the description column, specifically author, title, and publisher
     add_tokens_to_description(df)
