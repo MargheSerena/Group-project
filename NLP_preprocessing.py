@@ -56,7 +56,6 @@ def add_tokens_to_description(df):
 def calculate_ngrams_RAKE_original(text: str):
     """ generates a list of n-grams for a given input text using RAKE
     """
-
     r_unigram = Rake()
     r_phrase = Rake(min_length=2, max_length=3)
     r_unigram.extract_keywords_from_text(text)
